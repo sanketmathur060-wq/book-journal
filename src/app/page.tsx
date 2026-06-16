@@ -90,7 +90,9 @@ export default function Home() {
   const handleAddBook = async (newBookData: Omit<Book, "id">) => {
     const newBook: Book = {
       ...newBookData,
-      id: Math.random().toString(36).substring(2, 9),
+      id: typeof window !== "undefined" && window.crypto && window.crypto.randomUUID
+        ? window.crypto.randomUUID()
+        : "123e4567-e89b-12d3-a456-" + Math.random().toString(36).substring(2, 14),
     };
     await saveBook(newBook);
     const updatedBooks = await getBooks();
