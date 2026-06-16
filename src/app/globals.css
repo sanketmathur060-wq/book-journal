@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-planner-base: #f9f8f3;
+  --color-planner-paper: #fcfaf5;
+  --color-desk-bg: #8ba39a;
+  --color-tab-peach: #f4ebe1;
+  --color-accent-orange: #fba979;
+  --color-shelf-brown: #9c6644;
+  --color-ink-brown: #4a3f35;
+  --color-ink-gray: #6b7280;
+  --color-star-yellow: #fcd34d;
+  --color-spice-red: #ef4444;
+  --color-maroon: #800f2f;
+  --color-pastel-pink: #fff0f3;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-quicksand), sans-serif;
+  --font-caveat: var(--font-caveat), cursive;
+  --font-typewriter: var(--font-special-elite), monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --animate-fadeIn: fadeIn 0.25s ease-out;
+  --animate-slideUp: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-spin-slow: spin 8s linear infinite;
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-quicksand), sans-serif;
+  background-color: #8ba39a;
+  color: #4a3f35;
+  overflow-x: hidden;
 }
+
+/* Lined paper effect */
+.lined-paper {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 31px,
+    #fbcfe8 31px,
+    #fbcfe8 32px
+  );
+  background-size: 100% 32px;
+  line-height: 32px !important;
+  font-family: var(--font-special-elite), monospace;
+  padding: 0 8px;
+  border: none;
+  resize: none;
+}
+
+/* Wood shelf graphics */
+.shelf-wood {
+  background: linear-gradient(to bottom, #9c6644 0%, #7f5539 100%);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.3), 
+    0 2px 4px -1px rgba(0, 0, 0, 0.15), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  border-bottom: 3px solid #582f0e;
+}
+
+/* Hide scrollbars for nice mobile feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Scrapbook sticker tape effect */
+.sticker-tape {
+  background: rgba(254, 243, 199, 0.6);
+  backdrop-filter: blur(1px);
+  transform: rotate(-3deg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-left: 1px dashed rgba(0, 0, 0, 0.1);
+  border-right: 1px dashed rgba(0, 0, 0, 0.1);
+}
+

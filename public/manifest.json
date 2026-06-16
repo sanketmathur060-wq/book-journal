@@ -1,0 +1,17 @@
+{
+  "name": "BookTok Digital Reading Journal",
+  "short_name": "BookTok Journal",
+  "description": "A GoodNotes-style digital reading journal and analytical tracker.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9f8f3",
+  "theme_color": "#8ba39a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
