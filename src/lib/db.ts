@@ -307,6 +307,9 @@ export interface UserProfile {
   bio: string;
   genres: string[];
   avatarUrl?: string;
+  theme?: string;
+  layoutMode?: string;
+  glitterEnabled?: boolean;
 }
 
 export async function getUserProfile(email: string): Promise<UserProfile | null> {
@@ -327,7 +330,10 @@ export async function getUserProfile(email: string): Promise<UserProfile | null>
             email: data.email || email,
             bio: data.bio || "",
             genres: data.genres || [],
-            avatarUrl: data.avatarUrl || undefined
+            avatarUrl: data.avatarUrl || undefined,
+            theme: data.theme || undefined,
+            layoutMode: data.layout_mode || undefined,
+            glitterEnabled: data.glitter_enabled !== undefined ? data.glitter_enabled : undefined
           };
         }
       }
@@ -353,27 +359,61 @@ export async function getUserProfile(email: string): Promise<UserProfile | null>
 }
 
 export async function saveUserProfile(email: string, profile: UserProfile): Promise<void> {
+  // Fetch existing profile to merge settings and prevent overwriting
+  const existing = await getUserProfile(email);
+  const mergedProfile: UserProfile = {
+    ...existing,
+    ...profile,
+    theme: profile.theme !== undefined ? profile.theme : existing?.theme,
+    layoutMode: profile.layoutMode !== undefined ? profile.layoutMode : existing?.layoutMode,
+    glitterEnabled: profile.glitterEnabled !== undefined ? profile.glitterEnabled : existing?.glitterEnabled,
+  };
+
   // 1. Supabase Mode Scoping
   if (supabase) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const upsertData: any = {
+          id: user.id,
+          email: mergedProfile.email,
+          name: mergedProfile.name,
+          bio: mergedProfile.bio,
+          genres: mergedProfile.genres,
+          avatarUrl: mergedProfile.avatarUrl
+        };
+        
+        if (mergedProfile.theme !== undefined) upsertData.theme = mergedProfile.theme;
+        if (mergedProfile.layoutMode !== undefined) upsertData.layout_mode = mergedProfile.layoutMode;
+        if (mergedProfile.glitterEnabled !== undefined) upsertData.glitter_enabled = mergedProfile.glitterEnabled;
+
         const { error } = await supabase
           .from("profiles")
-          .upsert({
-            id: user.id,
-            email: profile.email,
-            name: profile.name,
-            bio: profile.bio,
-            genres: profile.genres,
-            avatarUrl: profile.avatarUrl
-          });
+          .upsert(upsertData);
         
         if (!error) return;
-        console.error("Supabase profile save error, saving locally:", error);
+        
+        // Postgres error 42703 is "column does not exist"
+        if (error.code === "42703") {
+          console.warn("Supabase profiles table lacks settings columns, retrying without them.");
+          const { error: retryErr } = await supabase
+            .from("profiles")
+            .upsert({
+              id: user.id,
+              email: mergedProfile.email,
+              name: mergedProfile.name,
+              bio: mergedProfile.bio,
+              genres: mergedProfile.genres,
+              avatarUrl: mergedProfile.avatarUrl
+            });
+          if (!retryErr) return;
+          console.error("Supabase profile save retry failed:", retryErr);
+        } else {
+          console.error("Supabase profile save failed:", error);
+        }
       }
     } catch (err) {
-      console.error("Supabase save profile exception, saving locally:", err);
+      console.error("Supabase save profile exception:", err);
     }
   }
 
@@ -383,7 +423,7 @@ export async function saveUserProfile(email: string, profile: UserProfile): Prom
     return new Promise((resolve, reject) => {
       const tx = db.transaction("user", "readwrite");
       const store = tx.objectStore("user");
-      const request = store.put({ key: "profile_" + email, value: profile });
+      const request = store.put({ key: "profile_" + email, value: mergedProfile });
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });

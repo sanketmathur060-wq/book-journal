@@ -12,7 +12,7 @@ import BookDetail from "../components/BookDetail";
 import Authors from "../components/Authors";
 import Profile from "../components/Profile";
 import { GlitterEffect } from "../components/GlitterEffect";
-import { Book, UserSession, getBooks, getLocalSession, setLocalSession, saveBook, deleteBook, supabase } from "../lib/db";
+import { Book, UserSession, getBooks, getLocalSession, setLocalSession, saveBook, deleteBook, supabase, getUserProfile, saveUserProfile } from "../lib/db";
 
 type TabType = "dashboard" | "log" | "gallery" | "wishlist" | "authors" | "profile";
 
@@ -210,6 +210,37 @@ const themes = {
   }
 };
 
+function getSavedPreferences(userEmail: string | undefined): {
+  theme: keyof typeof themes;
+  layout: "single" | "double";
+  glitter: boolean;
+} {
+  if (typeof window === "undefined") {
+    return { theme: "cozyBinder", layout: "single", glitter: true };
+  }
+  const prefix = userEmail ? `${userEmail}_` : "guest_";
+  
+  let theme: keyof typeof themes = "cozyBinder";
+  const savedTheme = localStorage.getItem(`${prefix}selected-theme`);
+  if (savedTheme && savedTheme in themes) {
+    theme = savedTheme as keyof typeof themes;
+  }
+
+  let layout: "single" | "double" = "single";
+  const savedLayout = localStorage.getItem(`${prefix}selected-layout`);
+  if (savedLayout === "single" || savedLayout === "double") {
+    layout = savedLayout as "single" | "double";
+  }
+
+  let glitter = true;
+  const savedGlitter = localStorage.getItem(`${prefix}selected-glitter`);
+  if (savedGlitter !== null) {
+    glitter = savedGlitter === "true";
+  }
+
+  return { theme, layout, glitter };
+}
+
 export default function Home() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
@@ -233,6 +264,67 @@ export default function Home() {
 
   const theme = themes[currentTheme];
 
+  const loadUserPreferences = React.useCallback(async (userEmail: string | undefined) => {
+    // 1. Load from localStorage immediately for instant UI application
+    const prefs = getSavedPreferences(userEmail);
+    setCurrentTheme(prefs.theme);
+    setLayoutMode(prefs.layout);
+    setIsGlitterEnabled(prefs.glitter);
+
+    // 2. Fetch latest settings from database profile if logged in
+    if (userEmail) {
+      try {
+        const profile = await getUserProfile(userEmail);
+        if (profile) {
+          if (profile.theme && profile.theme in themes && profile.theme !== prefs.theme) {
+            setCurrentTheme(profile.theme as keyof typeof themes);
+            localStorage.setItem(`${userEmail}_selected-theme`, profile.theme);
+          }
+          if (profile.layoutMode && (profile.layoutMode === "single" || profile.layoutMode === "double") && profile.layoutMode !== prefs.layout) {
+            setLayoutMode(profile.layoutMode as "single" | "double");
+            localStorage.setItem(`${userEmail}_selected-layout`, profile.layoutMode);
+          }
+          if (profile.glitterEnabled !== undefined && profile.glitterEnabled !== prefs.glitter) {
+            setIsGlitterEnabled(profile.glitterEnabled);
+            localStorage.setItem(`${userEmail}_selected-glitter`, profile.glitterEnabled ? "true" : "false");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to sync preferences from DB profile:", err);
+      }
+    }
+  }, []);
+
+  const saveUserPreference = async (key: string, value: string) => {
+    if (typeof window === "undefined") return;
+    const prefix = session?.email ? `${session.email}_` : "guest_";
+    localStorage.setItem(`${prefix}${key}`, value);
+
+    // If logged in, persist settings to the database profile
+    if (session?.email) {
+      try {
+        const profile = await getUserProfile(session.email) || {
+          name: session.name || "",
+          email: session.email,
+          bio: "",
+          genres: []
+        };
+        
+        if (key === "selected-theme") {
+          profile.theme = value;
+        } else if (key === "selected-layout") {
+          profile.layoutMode = value;
+        } else if (key === "selected-glitter") {
+          profile.glitterEnabled = value === "true";
+        }
+        
+        await saveUserProfile(session.email, profile);
+      } catch (err) {
+        console.error("Error saving preference to profile DB:", err);
+      }
+    }
+  };
+
   // Dynamically apply background style to body
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -252,20 +344,7 @@ export default function Home() {
       }
 
       // 2. Load preferences
-      if (typeof window !== "undefined") {
-        const savedTheme = localStorage.getItem("selected-theme");
-        if (savedTheme && savedTheme in themes) {
-          setCurrentTheme(savedTheme as keyof typeof themes);
-        }
-        const savedLayout = localStorage.getItem("selected-layout");
-        if (savedLayout === "single" || savedLayout === "double") {
-          setLayoutMode(savedLayout as "single" | "double");
-        }
-        const savedGlitter = localStorage.getItem("selected-glitter");
-        if (savedGlitter !== null) {
-          setIsGlitterEnabled(savedGlitter === "true");
-        }
-      }
+      loadUserPreferences(savedSession?.email);
 
       setLoading(false);
     }
@@ -286,12 +365,16 @@ export default function Home() {
           
           const bookList = await getBooks();
           setBooks(bookList);
+          
+          loadUserPreferences(newSession.email);
         } else {
           // Null session on signed out events
           if (event === "SIGNED_OUT") {
             setSession(null);
             await setLocalSession(null);
             setBooks([]);
+            setActiveBookId(null);
+            loadUserPreferences(undefined);
           }
         }
       });
@@ -300,13 +383,14 @@ export default function Home() {
         subscription.unsubscribe();
       };
     }
-  }, []);
+  }, [loadUserPreferences]);
 
   const handleAuthSuccess = async (newSession: UserSession) => {
     await setLocalSession(newSession);
     setSession(newSession);
     const bookList = await getBooks();
     setBooks(bookList);
+    loadUserPreferences(newSession.email);
   };
 
   const handleLogout = async () => {
@@ -318,6 +402,7 @@ export default function Home() {
       setSession(null);
       setBooks([]);
       setActiveBookId(null);
+      loadUserPreferences(undefined);
     }
   };
 
@@ -426,9 +511,7 @@ export default function Home() {
                           key={key}
                           onClick={() => {
                             setCurrentTheme(key as keyof typeof themes);
-                            if (typeof window !== "undefined") {
-                              localStorage.setItem("selected-theme", key);
-                            }
+                            saveUserPreference("selected-theme", key);
                           }}
                           className={`px-2 py-1.5 rounded text-[10px] font-bold text-center border transition-all cursor-pointer ${
                             currentTheme === key
@@ -449,9 +532,7 @@ export default function Home() {
                       <button
                         onClick={() => {
                           setLayoutMode("single");
-                          if (typeof window !== "undefined") {
-                            localStorage.setItem("selected-layout", "single");
-                          }
+                          saveUserPreference("selected-layout", "single");
                         }}
                         className={`flex-1 px-3 py-1.5 rounded text-[10px] font-bold text-center border transition-all cursor-pointer ${
                           layoutMode === "single"
@@ -464,9 +545,7 @@ export default function Home() {
                       <button
                         onClick={() => {
                           setLayoutMode("double");
-                          if (typeof window !== "undefined") {
-                            localStorage.setItem("selected-layout", "double");
-                          }
+                          saveUserPreference("selected-layout", "double");
                         }}
                         className={`flex-1 px-3 py-1.5 rounded text-[10px] font-bold text-center border transition-all cursor-pointer ${
                           layoutMode === "double"
@@ -489,9 +568,7 @@ export default function Home() {
                       onClick={() => {
                         const next = !isGlitterEnabled;
                         setIsGlitterEnabled(next);
-                        if (typeof window !== "undefined") {
-                          localStorage.setItem("selected-glitter", next ? "true" : "false");
-                        }
+                        saveUserPreference("selected-glitter", next ? "true" : "false");
                       }}
                       className={`px-3 py-1.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
                         isGlitterEnabled
