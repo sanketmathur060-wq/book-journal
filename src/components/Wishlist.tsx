@@ -56,9 +56,9 @@ export default function Wishlist({ books, onSelectBook, onUpdateBook }: Wishlist
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
       {/* LEFT COLUMN: Wishlist Gallery Grid (5 Cols on large layout) */}
-      <div className="lg:col-span-5 bg-white p-4 rounded-xl border border-[#3d1e03]/10 shadow-sm space-y-4">
+      <div className="lg:col-span-5 bg-planner-paper p-4 rounded-xl border border-[#3d1e03]/10 shadow-sm space-y-4">
         <div className="border-b border-[#3d1e03]/10 pb-2 flex items-center justify-between">
-          <h2 className="font-caveat text-3xl font-extrabold text-[#800f2f] flex items-center gap-1.5">
+          <h2 className="font-caveat text-3xl font-extrabold text-maroon flex items-center gap-1.5">
             <Heart className="w-5 h-5 text-red-500 fill-current" /> Wishlist Gallery
           </h2>
           <span className="text-[10px] text-ink-gray font-bold uppercase">
@@ -123,7 +123,7 @@ export default function Wishlist({ books, onSelectBook, onUpdateBook }: Wishlist
       </div>
 
       {/* RIGHT COLUMN: Checklist Table (7 Cols on large layout) */}
-      <div className="lg:col-span-7 bg-white rounded-xl border border-[#3d1e03]/10 shadow-md overflow-hidden">
+      <div className="lg:col-span-7 bg-planner-paper rounded-xl border border-[#3d1e03]/10 shadow-md overflow-hidden">
         {/* Burgundy Table Header */}
         <div className="bg-maroon px-4 py-3 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ export default function Wishlist({ books, onSelectBook, onUpdateBook }: Wishlist
               {wishlistBooks.map((book) => (
                 <tr
                   key={book.id}
-                  className="border-b border-stone-100 hover:bg-[#ffe5ec]/35 transition-colors odd:bg-pastel-pink/20 even:bg-white cursor-pointer"
+                  className="border-b border-stone-100 hover:bg-[#ffe5ec]/35 transition-colors odd:bg-pastel-pink/20 even:bg-planner-paper cursor-pointer"
                   onClick={() => onSelectBook(book.id)}
                 >
                   {/* Checkbox cell */}
@@ -198,7 +198,7 @@ export default function Wishlist({ books, onSelectBook, onUpdateBook }: Wishlist
 
               {wishlistBooks.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-ink-gray italic bg-white">
+                  <td colSpan={5} className="py-12 text-center text-ink-gray italic bg-planner-paper">
                     No books in your wishlist yet. Click Add Book to create a wishlist entry!
                   </td>
                 </tr>

@@ -34,9 +34,10 @@
 
 body {
   font-family: var(--font-quicksand), sans-serif;
-  background-color: #8ba39a;
+  background: radial-gradient(circle at 50% 30%, #a5bcb3 0%, #768d84 100%);
   color: #4a3f35;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 /* Lined paper effect */

@@ -7,16 +7,27 @@ import { Star, FileSpreadsheet, Eye } from "lucide-react";
 interface SheetLogProps {
   books: Book[];
   onSelectBook: (id: string) => void;
+  initialStatusFilter?: string;
 }
 
-export default function SheetLog({ books, onSelectBook }: SheetLogProps) {
+export default function SheetLog({ books, onSelectBook, initialStatusFilter = "all" }: SheetLogProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [prevInitialFilter, setPrevInitialFilter] = React.useState(initialStatusFilter);
+  const [statusVal, setStatusVal] = React.useState<string>(initialStatusFilter);
+
+  if (initialStatusFilter !== prevInitialFilter) {
+    setPrevInitialFilter(initialStatusFilter);
+    setStatusVal(initialStatusFilter);
+  }
 
   // Filter out wishlist books; show only library books in log
   const libraryBooks = books.filter((b) => !b.isWishlist);
 
-  // Filter books matching search query
+  // Filter books matching search query and status filter
   const filteredBooks = libraryBooks.filter((b) => {
+    const matchesStatus = statusVal === "all" || b.status === statusVal;
+    if (!matchesStatus) return false;
+
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
@@ -82,7 +93,7 @@ export default function SheetLog({ books, onSelectBook }: SheetLogProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#3d1e03]/10 shadow-md overflow-hidden">
+    <div className="bg-planner-paper text-ink-brown rounded-xl border border-[#3d1e03]/10 shadow-md overflow-hidden">
       {/* Burgundy header bar */}
       <div className="bg-maroon px-4 py-3 text-white flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -97,29 +108,53 @@ export default function SheetLog({ books, onSelectBook }: SheetLogProps) {
       </div>
 
       {/* Search Input Bar */}
-      <div className="bg-planner-base border-b border-[#3d1e03]/10 p-3 flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <svg className="w-4 h-4 text-ink-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            placeholder="Search log by title, author, genre..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white pl-9 pr-4 py-2 border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none placeholder-ink-gray/60 font-semibold"
-          />
+      <div className="bg-planner-base border-b border-[#3d1e03]/10 p-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-1 items-center gap-3 min-w-[280px]">
+          <div className="relative flex-1 max-w-md">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <svg className="w-4 h-4 text-ink-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Search log by title, author, genre..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-planner-paper text-ink-brown pl-9 pr-4 py-2 border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none placeholder-ink-gray/60 font-semibold"
+            />
+          </div>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="text-xs font-bold text-red-500 hover:text-red-700 cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
         </div>
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="text-xs font-bold text-red-500 hover:text-red-700 cursor-pointer"
-          >
-            Clear
-          </button>
-        )}
+
+        {/* Status Pills */}
+        <div className="flex gap-1.5 flex-wrap">
+          {[
+            { id: "all", label: "All 📚" },
+            { id: "reading", label: "Reading 📖" },
+            { id: "completed", label: "Completed 🏆" },
+            { id: "want_to_read", label: "To Read 🎯" }
+          ].map((pill) => (
+            <button
+              key={pill.id}
+              onClick={() => setStatusVal(pill.id)}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                statusVal === pill.id
+                  ? "bg-maroon text-white border-maroon shadow-sm"
+                  : "bg-white text-ink-gray border-[#3d1e03]/10 hover:bg-tab-peach"
+              }`}
+            >
+              {pill.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Spreadsheet Table */}
@@ -144,7 +179,7 @@ export default function SheetLog({ books, onSelectBook }: SheetLogProps) {
             {filteredBooks.map((book, idx) => (
               <tr
                 key={book.id}
-                className="border-b border-stone-100 hover:bg-[#ffe5ec]/50 transition-colors cursor-pointer group odd:bg-pastel-pink/40 even:bg-white"
+                className="border-b border-stone-100 hover:bg-[#ffe5ec]/50 transition-colors cursor-pointer group odd:bg-pastel-pink/40 even:bg-planner-paper"
                 onClick={() => onSelectBook(book.id)}
               >
                 {/* Index number */}
@@ -232,7 +267,7 @@ export default function SheetLog({ books, onSelectBook }: SheetLogProps) {
 
             {filteredBooks.length === 0 && (
               <tr>
-                <td colSpan={11} className="py-12 text-center text-ink-gray italic bg-white">
+                <td colSpan={11} className="py-12 text-center text-ink-gray italic bg-planner-paper">
                   {libraryBooks.length === 0 
                     ? "No books logged yet. Click the \"Add Book\" button to create your first reading log entry."
                     : "No matching books found in your reading log."}

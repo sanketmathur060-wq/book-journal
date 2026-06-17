@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BookOpen, Sparkles, Heart, Plus, Search, Loader2 } from "lucide-react";
 import { Book, getOptimizedCoverUrl } from "../lib/db";
 
@@ -44,9 +44,13 @@ export default function Authors({ books, onAddBook }: AuthorsProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const lastQueryRef = useRef("");
 
   // Fetch Author Details and Works dynamically from Open Library API
   const fetchAuthorCatalog = async (authorName: string) => {
+    if (!authorName.trim()) return;
+    if (authorName.trim() === lastQueryRef.current) return;
+    lastQueryRef.current = authorName.trim();
     setLoading(true);
     setErrorMsg("");
     try {
@@ -147,7 +151,7 @@ export default function Authors({ books, onAddBook }: AuthorsProps) {
       });
       setActiveAuthor(detailData.name || authorName);
     } catch (err: any) {
-      console.error(err);
+      console.log("Author search catalog issue:", err?.message || err);
       setErrorMsg(err.message || "Failed to retrieve author catalog.");
     } finally {
       setLoading(false);
@@ -159,11 +163,23 @@ export default function Authors({ books, onAddBook }: AuthorsProps) {
     fetchAuthorCatalog(activeAuthor);
   }, []);
 
+  // Debounce author search input as user types
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 3) {
+      lastQueryRef.current = "";
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      fetchAuthorCatalog(trimmed);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      fetchAuthorCatalog(searchQuery);
-    }
   };
 
   const handleAddCatalogBook = (catBook: CatalogBook, asWishlist: boolean) => {
@@ -207,32 +223,34 @@ export default function Authors({ books, onAddBook }: AuthorsProps) {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
       {/* LEFT COLUMN: Author Search & Spotlight Sidebar (4 Cols) */}
-      <div className="lg:col-span-4 bg-white p-4 rounded-xl border border-[#3d1e03]/10 shadow-sm space-y-4">
+      <div className="lg:col-span-4 bg-planner-paper p-4 rounded-xl border border-[#3d1e03]/10 shadow-sm space-y-4">
         
         {/* Dynamic Lookup Search form */}
         <form onSubmit={handleSearchSubmit} className="space-y-2.5">
           <label className="text-[10px] font-bold text-ink-gray uppercase tracking-wider block">
             🔍 Search Novelist Catalog
           </label>
-          <div className="flex gap-2">
+          <div className="relative w-full">
+            <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-ink-gray" />
             <input
               type="text"
               placeholder="e.g. Stephen King, Maas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-planner-base px-3 py-2 border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none"
+              className="w-full bg-planner-paper text-ink-brown pl-8 pr-8 py-2 border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none"
             />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-maroon text-white p-2 rounded-lg hover:bg-maroon/90 disabled:opacity-50 transition-all cursor-pointer shadow-sm"
-            >
-              <Search className="w-4 h-4" />
-            </button>
+            {loading && (
+              <div className="absolute right-2.5 top-2.5">
+                <svg className="animate-spin h-3.5 w-3.5 text-maroon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            )}
           </div>
         </form>
 
-        <h3 className="font-caveat text-2xl font-extrabold text-[#800f2f] pt-2 border-t border-[#3d1e03]/10 flex items-center gap-1">
+        <h3 className="font-caveat text-2xl font-extrabold text-maroon pt-2 border-t border-[#3d1e03]/10 flex items-center gap-1">
           <Sparkles className="w-4 h-4 text-amber-500 fill-current" /> Spotlight Authors
         </h3>
         
@@ -261,7 +279,7 @@ export default function Authors({ books, onAddBook }: AuthorsProps) {
       </div>
 
       {/* RIGHT COLUMN: Author Catalog Inspector (8 Cols) */}
-      <div className="lg:col-span-8 bg-white rounded-xl border border-[#3d1e03]/10 shadow-md overflow-hidden flex flex-col min-h-[350px]">
+      <div className="lg:col-span-8 bg-planner-paper rounded-xl border border-[#3d1e03]/10 shadow-md overflow-hidden flex flex-col min-h-[350px]">
         
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center py-24 text-ink-gray space-y-2">

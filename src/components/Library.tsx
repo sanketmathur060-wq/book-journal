@@ -1,45 +1,53 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Star, Search, BookOpen, Info, Sparkles } from "lucide-react";
 import { Book, getOptimizedCoverUrl } from "../lib/db";
 
 interface LibraryProps {
   books: Book[];
   onSelectBook: (id: string) => void;
+  initialStatusFilter?: string;
 }
 
 type FilterType = "status" | "genre" | "rating" | "source" | "year" | null;
 
 const SPINE_GRADIENTS = [
-  "from-[#ff4d6d] to-[#c77dff] text-white", // Pink-purple
-  "from-[#2a9d8f] to-[#264653] text-[#f1faee]", // Teal-navy
-  "from-[#e76f51] to-[#f4a261] text-[#2b1008]", // Orange-peach
-  "from-[#ffd166] to-[#ffb703] text-[#42220f]", // Yellow-gold
-  "from-[#9b5de5] to-[#f15bb5] text-white", // Lavender-pink
-  "from-[#00bbf9] to-[#00f5d4] text-[#1d3557]", // Cyan-mint
-  "from-[#ae2012] to-[#9b2226] text-white", // Dark red
-  "from-[#588157] to-[#3a5a40] text-[#f1faee]", // Forest sage
+  "from-[#ffccd5] to-[#ffb3c1] text-[#472c30]", // Soft pastel blush pink
+  "from-[#c8b6ff] to-[#bdb2ff] text-[#2a1d47]", // Soft pastel lavender
+  "from-[#ffd8be] to-[#ffb3c1] text-[#422d3b]", // Pastel orange-peach & pink
+  "from-[#e2e2e9] to-[#dcd6f7] text-[#332a56]", // Soft periwinkle
+  "from-[#e8fccf] to-[#b9f2e6] text-[#1a3832]", // Soft sage & mint
+  "from-[#ffccd5] to-[#ffb3c1] text-[#4d2c32]", // Another pink
+  "from-[#fae1dd] to-[#f0e6ef] text-[#473e46]", // Soft cream & lilac
+  "from-[#ffd166] to-[#fba979] text-[#422310]", // Soft gold peach
 ];
 
 // Aesthetic shelf decoration items
 const SHELF_DECORATIONS = [
-  { emoji: "🪴", style: "text-3xl mb-1 filter drop-shadow-md select-none" },
+  { emoji: "🧸", style: "text-3xl mb-1 filter drop-shadow-md select-none" },
   { emoji: "🌸", style: "text-3xl mb-1 filter drop-shadow-md select-none animate-pulse" },
   { emoji: "🕯️", style: "text-2xl mb-1 filter drop-shadow-md select-none" },
   { emoji: "☕", style: "text-2xl mb-0.5 filter drop-shadow-md select-none" },
-  { emoji: "🐱", style: "text-3xl filter drop-shadow-md select-none rotate-[2deg]" },
+  { emoji: "🎀", style: "text-3xl filter drop-shadow-md select-none" },
   { emoji: "🌷", style: "text-3xl mb-1 filter drop-shadow-md select-none" }
 ];
 
-export default function Library({ books, onSelectBook }: LibraryProps) {
+export default function Library({ books, onSelectBook, initialStatusFilter = "all" }: LibraryProps) {
   const libraryBooks = books.filter((b) => !b.isWishlist);
+
+  const [prevInitialFilter, setPrevInitialFilter] = useState(initialStatusFilter);
+  const [statusVal, setStatusVal] = useState<string>(initialStatusFilter);
+
+  if (initialStatusFilter !== prevInitialFilter) {
+    setPrevInitialFilter(initialStatusFilter);
+    setStatusVal(initialStatusFilter);
+  }
 
   const [activeFilterTab, setActiveFilterTab] = useState<FilterType>(null);
   const [searchQuery, setSearchQuery] = useState("");
   
   // Active filter states
-  const [statusVal, setStatusVal] = useState<string>("all");
   const [genreVal, setGenreVal] = useState<string>("all");
   const [ratingVal, setRatingVal] = useState<number | "all">("all");
   const [sourceVal, setSourceVal] = useState<string>("all");
@@ -122,7 +130,7 @@ export default function Library({ books, onSelectBook }: LibraryProps) {
               placeholder="Search library book title or author..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-[#3d1e03]/10 rounded-lg text-xs text-ink-brown focus:outline-none focus:border-maroon"
+              className="w-full pl-9 pr-4 py-2 bg-planner-paper border border-[#3d1e03]/10 rounded-lg text-xs text-ink-brown focus:outline-none focus:border-maroon"
             />
           </div>
         </div>
@@ -144,7 +152,7 @@ export default function Library({ books, onSelectBook }: LibraryProps) {
                   ? "bg-maroon text-white border-maroon shadow-sm"
                   : tab.active
                   ? "bg-[#ffccd5] text-maroon border-maroon/20"
-                  : "bg-white text-ink-brown border-[#3d1e03]/10 hover:bg-[#fff0f3]"
+                  : "bg-planner-paper text-ink-brown border-[#3d1e03]/10 hover:bg-[#fff0f3]"
               }`}
             >
               {tab.label} {tab.active && "•"}
@@ -170,7 +178,7 @@ export default function Library({ books, onSelectBook }: LibraryProps) {
 
         {/* Filter dropdowns */}
         {activeFilterTab && (
-          <div className="bg-white p-3 rounded-lg border border-[#3d1e03]/10 flex flex-wrap gap-1.5 animate-fadeIn">
+          <div className="bg-planner-paper p-3 rounded-lg border border-[#3d1e03]/10 flex flex-wrap gap-1.5 animate-fadeIn">
             {activeFilterTab === "status" && (
               <>
                 <span className="text-[9px] font-bold text-ink-gray uppercase w-full">Filter by Status:</span>
@@ -418,10 +426,10 @@ export default function Library({ books, onSelectBook }: LibraryProps) {
         {/* Right column: Taped Polaroid Spotlight Panel */}
         {!hoveredBook ? (
           /* On desktop, show helper instructions card when no spine is active. On mobile, show nothing */
-          <div className="hidden lg:flex lg:col-span-4 bg-white p-5 rounded-2xl border-2 border-[#3d1e03]/10 shadow-md flex-col items-center justify-center text-center min-h-[360px] sticky top-6 z-20">
+          <div className="hidden lg:flex lg:col-span-4 bg-planner-paper p-5 rounded-2xl border-2 border-[#3d1e03]/10 shadow-md flex-col items-center justify-center text-center min-h-[360px] sticky top-6 z-20">
             <div className="w-full flex items-center justify-center gap-1.5 border-b pb-2.5 mb-3">
               <Sparkles className="w-4 h-4 text-accent-pink animate-spin-slow" />
-              <h4 className="font-caveat text-xl font-bold text-[#800f2f]">Spine Inspector Panel</h4>
+              <h4 className="font-caveat text-xl font-bold text-maroon">Spine Inspector Panel</h4>
             </div>
             <div className="my-auto py-12 flex flex-col items-center space-y-3">
               <span className="text-4xl animate-bounce">👉📖</span>
@@ -438,12 +446,12 @@ export default function Library({ books, onSelectBook }: LibraryProps) {
           </div>
         ) : (
           /* When a book is hovered/selected, render details panel (floating bottom-sheet on mobile, sidebar on desktop) */
-          <div className="fixed bottom-4 left-4 right-4 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:col-span-4 bg-white p-4 lg:p-5 rounded-2xl border-2 border-[#3d1e03]/15 lg:border-[#3d1e03]/10 shadow-2xl lg:shadow-md z-[80] lg:z-20 flex flex-col lg:justify-between items-center text-center lg:min-h-[360px] lg:sticky lg:top-6 animate-slideUp">
+          <div className="fixed bottom-4 left-4 right-4 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:col-span-4 bg-planner-paper p-4 lg:p-5 rounded-2xl border-2 border-[#3d1e03]/15 lg:border-[#3d1e03]/10 shadow-2xl lg:shadow-md z-[80] lg:z-20 flex flex-col lg:justify-between items-center text-center lg:min-h-[360px] lg:sticky lg:top-6 animate-slideUp">
             
             <div className="w-full flex items-center justify-between lg:justify-center gap-1.5 border-b pb-2.5 mb-3">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-accent-pink animate-spin-slow" />
-                <h4 className="font-caveat text-xl font-bold text-[#800f2f]">Spine Inspector</h4>
+                <h4 className="font-caveat text-xl font-bold text-maroon">Spine Inspector</h4>
               </div>
               <button
                 onClick={() => setHoveredBook(null)}
@@ -454,8 +462,10 @@ export default function Library({ books, onSelectBook }: LibraryProps) {
             </div>
 
             <div className="w-full flex flex-row lg:flex-col items-center gap-4 lg:space-y-4">
-              {/* Polaroid Frame */}
-              <div className="w-[80px] lg:w-[130px] aspect-[2/3] bg-white p-1.5 lg:p-2.5 shadow-lg border border-stone-200 relative transform rotate-[-2deg] transition-transform hover:rotate-0 flex-shrink-0">
+              {/* Polaroid Frame with sticker tape */}
+              <div className="w-[80px] lg:w-[130px] aspect-[2/3] bg-planner-paper p-1.5 lg:p-2.5 shadow-lg border border-stone-200 relative transform rotate-[-2deg] transition-transform hover:rotate-0 flex-shrink-0 mt-3">
+                {/* Washi Tape on polaroid */}
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-10 h-3 bg-amber-100/40 backdrop-blur-[0.5px] rotate-[-5deg] border-x border-dashed border-black/5 shadow-sm z-10" />
                 {hoveredBook.coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img

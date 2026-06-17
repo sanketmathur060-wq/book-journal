@@ -101,7 +101,7 @@ export default function Profile({ session }: ProfileProps) {
   };
 
   return (
-    <div className="max-w-[850px] mx-auto bg-white rounded-2xl border border-[#3d1e03]/10 shadow-md overflow-hidden">
+    <div className="max-w-[850px] mx-auto bg-planner-paper text-ink-brown rounded-2xl border border-[#3d1e03]/10 shadow-md overflow-hidden">
       
       {/* Burgundy Header Tab */}
       <div className="bg-maroon text-white px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between border-b border-black/10">
@@ -139,7 +139,7 @@ export default function Profile({ session }: ProfileProps) {
             </span>
             
             {/* Polaroid Frame Container */}
-            <div className="w-[170px] bg-white p-3.5 pb-8 shadow-xl border border-stone-200 rounded transform rotate-[-1deg] transition-all hover:rotate-0 hover:scale-[1.02]">
+            <div className="w-[170px] bg-planner-paper p-3.5 pb-8 shadow-xl border border-stone-200 rounded transform rotate-[-1deg] transition-all hover:rotate-0 hover:scale-[1.02]">
               <div className="w-full aspect-square bg-stone-100 rounded border flex items-center justify-center overflow-hidden relative group">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element

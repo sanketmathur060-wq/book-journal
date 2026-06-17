@@ -8,9 +8,10 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieCha
 interface DashboardProps {
   books: Book[];
   onSelectBook: (id: string) => void;
+  onTabChange?: (tab: any, status?: string) => void;
 }
 
-export default function Dashboard({ books, onSelectBook }: DashboardProps) {
+export default function Dashboard({ books, onSelectBook, onTabChange }: DashboardProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -112,14 +113,22 @@ export default function Dashboard({ books, onSelectBook }: DashboardProps) {
     <div className="space-y-6">
       
       {/* 1. Stat cards header row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
         {[
-          { label: "My Library 📚", value: totalBooks, desc: "Total log entries", color: "bg-white border-[#ffccd5] text-[#800f2f]" },
-          { label: "Currently Reading 📖", value: currentlyReading, desc: "Active novels", color: "bg-white border-[#ffd166] text-[#cc7000]" },
-          { label: "Want to Read 🎯", value: wantToRead, desc: "To-read list shelf", color: "bg-white border-[#c8b6ff] text-[#4d2db3]" },
-          { label: "Need to Purchase 🛍️", value: needToPurchase, desc: "Unpurchased wishlist", color: "bg-white border-[#ff4d6d]/30 text-maroon" },
+          { label: "My Library 📚", value: totalBooks, desc: "Total log entries", color: "bg-planner-paper border-maroon/20 text-maroon", tapeColor: "bg-red-100/30 border-red-200/20", targetTab: "gallery", targetStatus: "all" },
+          { label: "Currently Reading 📖", value: currentlyReading, desc: "Active novels", color: "bg-planner-paper border-accent-orange/40 text-accent-orange", tapeColor: "bg-amber-100/30 border-amber-200/20", targetTab: "log", targetStatus: "reading" },
+          { label: "Want to Read 🎯", value: wantToRead, desc: "To-read list shelf", color: "bg-planner-paper border-accent-orange/40 text-accent-orange", tapeColor: "bg-purple-100/30 border-purple-200/20", targetTab: "log", targetStatus: "want_to_read" },
+          { label: "Need to Purchase 🛍️", value: needToPurchase, desc: "Unpurchased wishlist", color: "bg-planner-paper border-maroon/20 text-maroon", tapeColor: "bg-pink-100/30 border-pink-200/20", targetTab: "wishlist", targetStatus: "all" },
         ].map((stat, idx) => (
-          <div key={idx} className={`p-3 sm:p-4 rounded-xl border-2 ${stat.color} shadow-sm relative transition-all hover:scale-[1.01]`}>
+          <div
+            key={idx}
+            onClick={() => {
+              if (onTabChange) onTabChange(stat.targetTab, stat.targetStatus);
+            }}
+            className={`p-3 sm:p-4 rounded-xl border-2 ${stat.color} shadow-sm relative transition-all hover:scale-[1.03] hover:-rotate-1 overflow-visible pt-6 cursor-pointer`}
+          >
+            {/* Adorable Washi Tape sticker */}
+            <div className={`absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-3.5 ${stat.tapeColor} backdrop-blur-[0.5px] rotate-[-3deg] border-x border-dashed border-black/10 shadow-sm pointer-events-none`} />
             <span className="text-[8.5px] sm:text-[10px] uppercase font-bold text-ink-gray block tracking-wider truncate" title={stat.label}>{stat.label}</span>
             <h3 className="font-caveat text-2xl sm:text-4xl font-extrabold mt-0.5 sm:mt-1 leading-none">{stat.value}</h3>
             <p className="text-[8px] sm:text-[9px] text-ink-gray font-semibold mt-0.5 truncate" title={stat.desc}>{stat.desc}</p>
@@ -131,8 +140,10 @@ export default function Dashboard({ books, onSelectBook }: DashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         
         {/* Left: Yearly Challenge Progress Circle */}
-        <div className="md:col-span-5 bg-white p-4 sm:p-6 rounded-2xl border border-[#3d1e03]/10 shadow-sm flex flex-col items-center justify-between text-center relative">
-          <span className="font-caveat text-2xl font-bold text-[#800f2f] flex items-center gap-1">
+        <div className="md:col-span-5 bg-planner-paper p-4 sm:p-6 rounded-2xl border border-[#3d1e03]/10 shadow-sm flex flex-col items-center justify-between text-center relative pt-8">
+          {/* Large tape on top */}
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-4 bg-amber-50/50 backdrop-blur-[0.5px] rotate-[1.5deg] border-x border-dashed border-black/10 shadow-sm pointer-events-none" />
+          <span className="font-caveat text-2xl font-bold text-maroon flex items-center gap-1">
             <Trophy className="w-5 h-5 text-amber-500" /> Yearly Reading Challenge
           </span>
 
@@ -169,7 +180,7 @@ export default function Dashboard({ books, onSelectBook }: DashboardProps) {
 
         {/* Right: Best Novel Spotlight Card */}
         <div className="md:col-span-7 bg-[#fff0f3]/40 p-4 sm:p-6 rounded-2xl border border-[#ffccd5] shadow-sm flex flex-col md:flex-row items-center justify-around gap-6 relative">
-          <div className="absolute top-[-5px] left-4 w-12 h-4 bg-[#ffccd5]/50 rotate-[-12deg] shadow-sm" />
+          <div className="absolute top-[-8px] left-6 w-16 h-4 bg-pink-100/40 border-x border-dashed border-black/5 rotate-[-8deg] shadow-sm pointer-events-none" />
           
           <div className="text-center md:text-left space-y-2 max-w-[240px]">
             <span className="bg-[#ff4d6d] text-white text-[8px] font-black uppercase px-2 py-0.5 rounded shadow">
@@ -227,8 +238,8 @@ export default function Dashboard({ books, onSelectBook }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left: Monthly Page activity (7 Cols) */}
-        <div className="lg:col-span-7 bg-white p-4 sm:p-6 rounded-2xl border border-[#3d1e03]/10 shadow-sm space-y-4">
-          <h4 className="font-caveat text-2xl font-bold text-[#800f2f] flex items-center gap-1">
+        <div className="lg:col-span-7 bg-planner-paper p-4 sm:p-6 rounded-2xl border border-[#3d1e03]/10 shadow-sm space-y-4">
+          <h4 className="font-caveat text-2xl font-bold text-maroon flex items-center gap-1">
             📜 Monthly Reading Activity (Pages)
           </h4>
           <div className="w-full h-48">
@@ -248,8 +259,8 @@ export default function Dashboard({ books, onSelectBook }: DashboardProps) {
         </div>
 
         {/* Right: Genre Distribution Donut Pie Chart (5 Cols) */}
-        <div className="lg:col-span-5 bg-white p-4 sm:p-6 rounded-2xl border border-[#3d1e03]/10 shadow-sm flex flex-col justify-between">
-          <h4 className="font-caveat text-2xl font-bold text-[#800f2f] flex items-center gap-1">
+        <div className="lg:col-span-5 bg-planner-paper p-4 sm:p-6 rounded-2xl border border-[#3d1e03]/10 shadow-sm flex flex-col justify-between">
+          <h4 className="font-caveat text-2xl font-bold text-maroon flex items-center gap-1">
             📊 Genre Distribution
           </h4>
           
@@ -281,7 +292,7 @@ export default function Dashboard({ books, onSelectBook }: DashboardProps) {
 
             {genrePieData.length > 0 && (
               <div className="absolute flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-lg font-bold text-[#800f2f]">{totalBooks}</span>
+                <span className="text-lg font-bold text-maroon">{totalBooks}</span>
                 <span className="text-[7px] font-bold text-ink-gray uppercase">Novels</span>
               </div>
             )}
@@ -305,8 +316,8 @@ export default function Dashboard({ books, onSelectBook }: DashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         
         {/* Rating ledger */}
-        <div className="md:col-span-6 bg-white p-4 sm:p-5 rounded-2xl border border-[#3d1e03]/10 shadow-sm flex flex-col justify-between">
-          <span className="font-caveat text-2xl font-bold text-[#800f2f] flex items-center gap-1">
+        <div className="md:col-span-6 bg-planner-paper p-4 sm:p-5 rounded-2xl border border-[#3d1e03]/10 shadow-sm flex flex-col justify-between">
+          <span className="font-caveat text-2xl font-bold text-maroon flex items-center gap-1">
             ⭐ Rating Ledger
           </span>
 
@@ -337,8 +348,8 @@ export default function Dashboard({ books, onSelectBook }: DashboardProps) {
         </div>
 
         {/* Ledger */}
-        <div className="md:col-span-6 bg-white p-4 sm:p-5 rounded-2xl border border-[#3d1e03]/10 shadow-sm flex flex-col justify-between">
-          <span className="font-caveat text-2xl font-bold text-[#800f2f] flex items-center gap-1">
+        <div className="md:col-span-6 bg-planner-paper p-4 sm:p-5 rounded-2xl border border-[#3d1e03]/10 shadow-sm flex flex-col justify-between">
+          <span className="font-caveat text-2xl font-bold text-maroon flex items-center gap-1">
             💸 Bookish Budget ledger
           </span>
 

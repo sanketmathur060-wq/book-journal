@@ -50,6 +50,7 @@ export default function AddBook({ isOpen, onClose, onAddBook, books }: AddBookPr
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const lastQueryRef = useRef("");
 
   // Initialize and stop scanner
   useEffect(() => {
@@ -71,7 +72,6 @@ export default function AddBook({ isOpen, onClose, onAddBook, books }: AddBookPr
             (decodedText) => {
               stopScanning();
               setSearchQuery(decodedText);
-              handleSearchBook(decodedText);
             },
             () => {
               // Quiet scanning error handler
@@ -97,6 +97,23 @@ export default function AddBook({ isOpen, onClose, onAddBook, books }: AddBookPr
     }
   }, [isScanning, isOpen]);
 
+  // Debounce search input as user types
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 3) {
+      setSearchResults([]);
+      setIsLoading(false);
+      lastQueryRef.current = "";
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      handleSearchBook(trimmed);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
   const stopScanning = () => {
     setIsScanning(false);
     if (scannerRef.current) {
@@ -109,6 +126,8 @@ export default function AddBook({ isOpen, onClose, onAddBook, books }: AddBookPr
   // Open Library direct dynamic search (Google Books removed to prevent quota errors)
   const handleSearchBook = async (query: string) => {
     if (!query.trim()) return;
+    if (query === lastQueryRef.current) return;
+    lastQueryRef.current = query;
     setIsLoading(true);
     setScanError("");
     setSearchResults([]);
@@ -146,8 +165,8 @@ export default function AddBook({ isOpen, onClose, onAddBook, books }: AddBookPr
       } else {
         setScanError("No matching novels found online. Please fill details manually!");
       }
-    } catch (olError) {
-      console.error("Search failed:", olError);
+    } catch (olError: any) {
+      console.log("Open Library lookup failed: " + (olError?.message || olError));
       setScanError("Online query is currently unavailable. Please type details manually in the form below!");
     } finally {
       setIsLoading(false);
@@ -374,29 +393,29 @@ export default function AddBook({ isOpen, onClose, onAddBook, books }: AddBookPr
                   </span>
                   
                   <div className="flex gap-2">
-                    <div className="relative flex-1">
+                    <div className="relative w-full">
                       <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-ink-gray" />
                       <input
                         type="text"
                         placeholder="Search title or author (e.g. Emily Henry, Maas)..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white pl-8 pr-2 py-2 border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none"
+                        className="w-full bg-planner-paper text-ink-brown pl-8 pr-8 py-2 border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none"
                       />
+                      {isLoading && (
+                        <div className="absolute right-2.5 top-2.5">
+                          <svg className="animate-spin h-3.5 w-3.5 text-maroon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => handleSearchBook(searchQuery)}
-                      className="bg-maroon text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-maroon/90 disabled:opacity-50 flex items-center gap-1 shadow-sm cursor-pointer"
-                    >
-                      {isLoading ? "Searching..." : "Lookup"}
-                    </button>
                   </div>
 
                   {/* Dropdown list of Search Results */}
                   {searchResults.length > 0 && (
-                    <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#3d1e03]/15 shadow-2xl rounded-xl p-2 z-50 space-y-1 max-h-56 overflow-y-auto no-scrollbar">
+                    <div className="absolute left-0 right-0 top-[102%] bg-planner-paper border border-[#3d1e03]/15 shadow-2xl rounded-xl p-2 z-50 space-y-1 max-h-56 overflow-y-auto no-scrollbar">
                       <div className="text-[9px] uppercase font-bold text-ink-gray px-2 pb-1 border-b border-stone-100 flex justify-between">
                         <span>{isFallbackActive ? "BookTok Cozy Matches" : "Matching Books Found"}</span>
                         <button type="button" onClick={() => setSearchResults([])} className="text-red-500 hover:underline font-extrabold">Close</button>
@@ -541,7 +560,7 @@ export default function AddBook({ isOpen, onClose, onAddBook, books }: AddBookPr
                 </div>
 
                 {/* Cover Upload Box */}
-                <div className="bg-white p-3 rounded-lg border border-[#3d1e03]/10 space-y-2">
+                <div className="bg-planner-paper p-3 rounded-lg border border-[#3d1e03]/10 space-y-2">
                   <span className="text-xs font-bold text-ink-brown block">Book Cover Photo</span>
                   
                   <div className="flex gap-4 items-center">
