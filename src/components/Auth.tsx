@@ -35,7 +35,10 @@ export default function Auth({ onSuccess }: AuthProps) {
           const { data, error: signupErr } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { name } }
+            options: {
+              data: { name },
+              emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+            }
           });
           if (signupErr) {
             setError(signupErr.message);
