@@ -11,6 +11,7 @@ import AddBook from "../components/AddBook";
 import BookDetail from "../components/BookDetail";
 import Authors from "../components/Authors";
 import Profile from "../components/Profile";
+import AestheticBackground from "../components/AestheticBackground";
 import { GlitterEffect } from "../components/GlitterEffect";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { Book, UserSession, getBooks, getLocalSession, setLocalSession, saveBook, deleteBook, auth, getUserProfile, saveUserProfile } from "../lib/db";
@@ -72,7 +73,7 @@ const themes = {
       "--color-spine-color": "#582f0e",
       "--color-spine-border": "#3d1e03"
     },
-    bodyBg: "radial-gradient(circle at 50% 30%, #a5bcb3 0%, #768d84 100%)",
+    bodyBg: "linear-gradient(-45deg, #a5bcb3, #f0f4f2, #768d84, #8ba39a)",
     glitterColors: ["#800f2f", "#fba979", "#4a3f35", "#ffd166", "#8ba39a"],
     glitterBlendMode: "normal"
   },
@@ -91,7 +92,7 @@ const themes = {
       "--color-spine-color": "#3d2314",
       "--color-spine-border": "#28170d"
     },
-    bodyBg: "radial-gradient(circle at 50% 30%, #3e5c3c 0%, #20311f 100%)",
+    bodyBg: "linear-gradient(-45deg, #3e5c3c, #1a2f19, #20311f, #2c442a)",
     glitterColors: ["#1e4d2b", "#d4af37", "#1b2e1a", "#e5dcc6", "#ffffff"],
     glitterBlendMode: "normal"
   },
@@ -110,7 +111,7 @@ const themes = {
       "--color-spine-color": "#1f1a30",
       "--color-spine-border": "#13101e"
     },
-    bodyBg: "radial-gradient(circle at 50% 30%, #43395c 0%, #1d1929 100%)",
+    bodyBg: "linear-gradient(-45deg, #43395c, #2b263d, #1d1929, #352b47)",
     glitterColors: ["#503975", "#b298dc", "#241e33", "#ffccd5", "#ffffff"],
     glitterBlendMode: "normal"
   },
@@ -129,7 +130,7 @@ const themes = {
       "--color-spine-color": "#8c4451",
       "--color-spine-border": "#5c2a33"
     },
-    bodyBg: "radial-gradient(circle at 50% 30%, #ffd0d5 0%, #ba8a90 100%)",
+    bodyBg: "linear-gradient(-45deg, #ffd0d5, #fff0f2, #ba8a90, #f8aab7)",
     glitterColors: ["#c95267", "#ffb3c1", "#472c30", "#ffd166", "#1e3a8a"],
     glitterBlendMode: "normal"
   },
@@ -148,7 +149,7 @@ const themes = {
       "--color-spine-color": "#581c87",
       "--color-spine-border": "#3b0764"
     },
-    bodyBg: "radial-gradient(circle at 50% 30%, #f3e8ff 0%, #c084fc 100%)",
+    bodyBg: "linear-gradient(-45deg, #f3e8ff, #d8b4fe, #c084fc, #e9d5ff)",
     glitterColors: ["#701a75", "#c084fc", "#3b0764", "#ffd166", "#1e3a8a"],
     glitterBlendMode: "normal"
   },
@@ -167,7 +168,7 @@ const themes = {
       "--color-spine-color": "#ea580c",
       "--color-spine-border": "#9a3412"
     },
-    bodyBg: "radial-gradient(circle at 50% 30%, #ffedd5 0%, #fdba74 100%)",
+    bodyBg: "linear-gradient(-45deg, #ffedd5, #fdba74, #fed7aa, #ffc785)",
     glitterColors: ["#c2410c", "#fb923c", "#7c2d12", "#ffedd5", "#1e3a8a"],
     glitterBlendMode: "normal"
   },
@@ -186,7 +187,7 @@ const themes = {
       "--color-spine-color": "#212529",
       "--color-spine-border": "#000000"
     },
-    bodyBg: "radial-gradient(circle at 50% 30%, #6c757d 0%, #343a40 100%)",
+    bodyBg: "linear-gradient(-45deg, #6c757d, #343a40, #495057, #868e96)",
     glitterColors: ["#212529", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa"],
     glitterBlendMode: "normal"
   },
@@ -205,7 +206,7 @@ const themes = {
       "--color-spine-color": "#4a0e1c",
       "--color-spine-border": "#1f0308"
     },
-    bodyBg: "radial-gradient(circle at 50% 30%, #1e1115 0%, #080305 100%)",
+    bodyBg: "linear-gradient(-45deg, #1e1115, #080305, #1a1215, #2e1e23)",
     glitterColors: ["#ff4d6d", "#c95267", "#ffffff", "#ffd166", "#e25c80"],
     glitterBlendMode: "normal"
   }
@@ -455,19 +456,28 @@ export default function Home() {
 
   return (
     <div 
-      className="min-h-screen p-1 sm:p-4 md:p-8 flex flex-col items-center justify-start relative select-none w-full transition-all duration-300"
+      className="min-h-screen p-1 sm:p-4 md:p-8 flex flex-col items-center justify-start relative select-none w-full transition-all duration-300 z-0"
       style={theme.cssVariables as React.CSSProperties}
     >
       
+      {/* Super Aesthetic Background Layer */}
+      <AestheticBackground themeName={currentTheme} />
+
       {/* Main Widescreen Planner container with a leather binder spine on the left */}
-      <div className="w-full max-w-[1300px] bg-planner-base rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] border border-[#3d1e03]/25 overflow-hidden flex flex-col min-h-[85vh] pl-2 sm:pl-3.5 relative">
+      <div 
+        className="w-full max-w-[1300px] rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.4)] border border-white/30 overflow-hidden flex flex-col min-h-[85vh] pl-2 sm:pl-3.5 relative backdrop-blur-2xl transition-all duration-500 hover:shadow-[0_40px_70px_-15px_rgba(0,0,0,0.5)] z-10"
+        style={{ backgroundColor: "color-mix(in srgb, var(--color-planner-base) 85%, transparent)" }}
+      >
         
         {/* Left Book Spine representation */}
         <div className="absolute left-0 top-0 bottom-0 w-2 sm:w-3.5 bg-[var(--color-spine-color)] border-r border-[var(--color-spine-border)]/35 z-20 pointer-events-none" />
         <div className="absolute left-[1px] sm:left-[2px] top-0 bottom-0 w-[1px] bg-white/10 z-20 pointer-events-none" />
 
         {/* Header toolbar */}
-        <header className="bg-maroon text-white px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b border-black/20 gap-2 flex-shrink-0">
+        <header 
+          className="text-white px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b border-black/10 gap-2 flex-shrink-0 backdrop-blur-md relative z-50"
+          style={{ backgroundColor: "color-mix(in srgb, var(--color-maroon) 90%, transparent)" }}
+        >
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white/10 rounded-lg flex items-center justify-center border border-white/20 flex-shrink-0">
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -625,8 +635,8 @@ export default function Home() {
                       }}
                       className={`px-5 py-2.5 rounded-t-xl text-xs font-bold flex flex-shrink-0 items-center gap-2 border-t border-x transition-all duration-200 cursor-pointer relative ${
                         isActive
-                          ? "bg-planner-paper text-maroon border-[#3d1e03]/10 border-b-transparent translate-y-[1px] z-10 shadow-[0_-3px_10px_rgba(0,0,0,0.04)]"
-                          : "bg-[#dec9b6]/15 text-ink-gray border-transparent hover:bg-[#dec9b6]/35 hover:text-ink-brown"
+                          ? "bg-planner-paper text-maroon border-white/30 border-b-transparent translate-y-[1px] z-10 shadow-[0_-3px_10px_rgba(0,0,0,0.1)]"
+                          : "bg-white/10 text-ink-gray border-transparent hover:bg-white/30 hover:text-ink-brown"
                       }`}
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-maroon scale-100' : 'bg-ink-gray scale-50 opacity-60'} transition-transform`} />
@@ -677,7 +687,7 @@ export default function Home() {
             </div>
 
             {/* Left Page (Sidebar Navigation & Overview) */}
-            <aside className="lg:col-span-3 bg-planner-paper border-r border-[#3d1e03]/15 p-4 sm:p-5 flex flex-col justify-between gap-6 z-10 overflow-y-auto no-scrollbar">
+            <aside className="lg:col-span-3 bg-planner-paper border-r border-white/20 p-4 sm:p-5 flex flex-col justify-between gap-6 z-10 overflow-y-auto no-scrollbar">
               <div className="space-y-5">
                 <div className="space-y-1">
                   <span className="text-[9px] font-bold text-ink-gray uppercase tracking-wider block">Binder Navigation</span>
@@ -716,7 +726,7 @@ export default function Home() {
                 </div>
 
                 {/* Quick stats mini note widget */}
-                <div className="bg-planner-base p-4 rounded-xl border border-[#3d1e03]/10 relative overflow-visible mt-2 shadow-inner">
+                <div className="bg-planner-base p-4 rounded-xl border border-white/30 relative overflow-visible mt-2 shadow-[0_4px_15px_rgba(0,0,0,0.05)]">
                   {/* Taped sticky note */}
                   <div className="absolute -top-2 left-6 w-12 h-3.5 bg-amber-100/50 backdrop-blur-[0.5px] rotate-[-5deg] border-x border-dashed border-black/5 shadow-sm pointer-events-none" />
                   <span className="font-caveat text-xl font-bold text-maroon block mb-1">Journal Note ✍️</span>
@@ -773,7 +783,7 @@ export default function Home() {
         )}
 
         {/* Footer label */}
-        <footer className="bg-planner-paper px-6 py-3 border-t border-[#3d1e03]/10 flex items-center justify-between text-[10px] text-ink-gray font-semibold uppercase flex-shrink-0">
+        <footer className="bg-planner-paper px-6 py-3 border-t border-white/20 flex items-center justify-between text-[10px] text-ink-gray font-semibold uppercase flex-shrink-0">
           <span>Copyright © {new Date().getFullYear()} Sanket Mathur. All Rights Reserved.</span>
           <span>{session.isLocal ? "Local Offline Database Active" : "Firebase Cloud Sync Active"}</span>
         </footer>

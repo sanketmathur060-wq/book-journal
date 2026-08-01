@@ -331,6 +331,7 @@ export interface UserProfile {
   theme?: string;
   layoutMode?: string;
   glitterEnabled?: boolean;
+  shelfDecorations?: string; // Stored as a JSON string to avoid Firestore nested object limits
 }
 
 export async function getUserProfile(email: string): Promise<UserProfile | null> {
@@ -349,7 +350,8 @@ export async function getUserProfile(email: string): Promise<UserProfile | null>
           avatarUrl: data.avatarUrl || undefined,
           theme: data.theme || undefined,
           layoutMode: data.layoutMode || undefined,
-          glitterEnabled: data.glitterEnabled !== undefined ? data.glitterEnabled : undefined
+          glitterEnabled: data.glitterEnabled !== undefined ? data.glitterEnabled : undefined,
+          shelfDecorations: data.shelfDecorations || undefined
         };
       }
     } catch (err) {
@@ -373,14 +375,20 @@ export async function getUserProfile(email: string): Promise<UserProfile | null>
   }
 }
 
-export async function saveUserProfile(email: string, profile: UserProfile): Promise<void> {
+export async function saveUserProfile(email: string, profile: Partial<UserProfile>): Promise<void> {
   const existing = await getUserProfile(email);
   const mergedProfile: UserProfile = {
     ...existing,
     ...profile,
+    name: profile.name !== undefined ? profile.name : (existing?.name || ""),
+    email: profile.email !== undefined ? profile.email : (existing?.email || email),
+    bio: profile.bio !== undefined ? profile.bio : (existing?.bio || ""),
+    genres: profile.genres !== undefined ? profile.genres : (existing?.genres || []),
+    avatarUrl: profile.avatarUrl !== undefined ? profile.avatarUrl : existing?.avatarUrl,
     theme: profile.theme !== undefined ? profile.theme : existing?.theme,
     layoutMode: profile.layoutMode !== undefined ? profile.layoutMode : existing?.layoutMode,
     glitterEnabled: profile.glitterEnabled !== undefined ? profile.glitterEnabled : existing?.glitterEnabled,
+    shelfDecorations: profile.shelfDecorations !== undefined ? profile.shelfDecorations : existing?.shelfDecorations,
   };
 
   // 1. Firebase Cloud Mode Scoping
@@ -396,7 +404,8 @@ export async function saveUserProfile(email: string, profile: UserProfile): Prom
         avatarUrl: mergedProfile.avatarUrl || "",
         theme: mergedProfile.theme || "",
         layoutMode: mergedProfile.layoutMode || "single",
-        glitterEnabled: mergedProfile.glitterEnabled !== undefined ? mergedProfile.glitterEnabled : true
+        glitterEnabled: mergedProfile.glitterEnabled !== undefined ? mergedProfile.glitterEnabled : true,
+        shelfDecorations: mergedProfile.shelfDecorations || ""
       }, { merge: true });
       return;
     } catch (err) {

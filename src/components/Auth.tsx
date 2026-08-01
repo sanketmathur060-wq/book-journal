@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Lock, BookOpen, KeyRound, Mail, User, AlertCircle } from "lucide-react";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendEmailVerification, signOut } from "firebase/auth";
 import { UserSession, isFirebaseConfigured, auth, localRegister, localLogin, saveUserProfile } from "../lib/db";
+import AestheticBackground from "./AestheticBackground";
 
 interface AuthProps {
   onSuccess: (session: UserSession) => void;
@@ -123,30 +124,33 @@ export default function Auth({ onSuccess }: AuthProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-desk-bg p-2 sm:p-4 select-none">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-transparent p-2 sm:p-4 select-none relative overflow-hidden z-0">
       
-      {/* Binder Cover */}
-      <div className="w-full max-w-md bg-[#582f0e] rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.6)] relative overflow-hidden flex flex-col items-center justify-between p-4 sm:p-8 border-l-[8px] sm:border-l-[14px] border-[#3d1e03] min-h-[500px] sm:min-h-[580px]">
+      {/* Super Aesthetic Background Layer */}
+      <AestheticBackground themeName="cozyBinder" />
+
+      {/* Realistic Binder Cover */}
+      <div className="w-full max-w-md bg-[#582f0e] rounded-2xl shadow-[0_30px_60px_-12px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col items-center justify-between p-4 sm:p-8 border-l-[12px] sm:border-l-[16px] border-[#3d1e03] min-h-[500px] sm:min-h-[580px] z-10 transition-all duration-500 hover:shadow-[0_40px_80px_-12px_rgba(0,0,0,0.9)] hover:-translate-y-1">
         
         {/* Binder Design Elements */}
         <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[#fba979]/30 rounded-tr-xl"></div>
         <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#fba979]/30 rounded-br-xl"></div>
         <div className="absolute top-0 left-0 w-2 h-full bg-black/15"></div>
         
-        {/* Leather spine indents */}
-        <div className="absolute top-12 left-2 sm:left-4 w-1 h-3/4 bg-white/5 rounded-full"></div>
+        {/* Leather spine indents (Modernized) */}
+        <div className="absolute top-12 left-2 sm:left-4 w-1 h-3/4 bg-white/5 rounded-full shadow-inner"></div>
         <div className="absolute top-12 left-3 sm:left-6 w-[1px] sm:w-[2px] h-3/4 bg-black/25 rounded-full"></div>
         
         {/* Cozy Book Ribbon */}
-        <div className="absolute top-0 right-8 sm:right-14 w-4 sm:w-6 h-24 sm:h-36 bg-accent-orange/60 shadow-md rounded-b-md transform origin-top rotate-[4deg] z-10"></div>
+        <div className="absolute top-0 right-8 sm:right-14 w-4 sm:w-6 h-24 sm:h-36 bg-accent-orange/80 shadow-[0_4px_10px_rgba(0,0,0,0.5)] rounded-b-sm transform origin-top rotate-[4deg] z-10 hover:rotate-[6deg] transition-transform duration-300 cursor-pointer"></div>
 
         {/* 1. Header (Book Title Label) */}
-        <div className="w-full bg-planner-base rounded-md border-2 border-[#3d1e03]/30 shadow-inner py-2.5 sm:py-4 px-3 sm:px-4 text-center mt-2 sm:mt-6 z-20">
-          <h1 className="font-caveat text-3xl sm:text-4xl font-extrabold text-ink-brown tracking-wide leading-none">
+        <div className="w-full bg-[#fdfbf7] rounded-md border-2 border-[#3d1e03]/30 shadow-inner py-4 sm:py-5 px-3 sm:px-4 text-center mt-2 sm:mt-6 z-20 transform transition-transform hover:scale-105" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E\")" }}>
+          <h1 className="font-caveat text-4xl sm:text-5xl font-extrabold text-gray-800 tracking-wide leading-none drop-shadow-sm">
             My Reading Journal
           </h1>
-          <p className="text-[8px] sm:text-[9px] uppercase tracking-widest text-ink-gray mt-1 sm:mt-1.5 font-bold">
-            Multi-User Log Edition
+          <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-500 mt-2 font-bold">
+            Aesthetic Digital Edition
           </p>
         </div>
 
@@ -170,7 +174,7 @@ export default function Auth({ onSuccess }: AuthProps) {
         </div>
 
         {/* 3. Authentication Forms */}
-        <div className="w-full bg-planner-paper/95 p-4 sm:p-5 rounded-xl border border-[#3d1e03]/20 shadow-lg z-20 my-2.5 sm:my-4 flex flex-col items-center">
+        <div className="w-full bg-[#fcfaf5] p-5 sm:p-6 rounded-xl border border-[#3d1e03]/20 shadow-lg z-20 my-2.5 sm:my-4 flex flex-col items-center transition-all duration-300" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E\")" }}>
           
           {error && (
             <p className="w-full text-center text-xs font-bold text-red-500 bg-red-50 border border-red-200/50 p-2 rounded mb-3">
@@ -184,59 +188,59 @@ export default function Auth({ onSuccess }: AuthProps) {
             </p>
           )}
 
-          <form onSubmit={handleSubmit} className="w-full space-y-3">
-            <div className="text-center font-bold text-ink-brown text-xs border-b pb-1.5 mb-2">
+          <form onSubmit={handleSubmit} className="w-full space-y-4">
+            <div className="text-center font-extrabold text-[#4a3f35] text-xs border-b border-[#3d1e03]/10 pb-2 mb-3 tracking-wider">
               {isRegistering ? "CREATE READING ACCOUNT" : "SIGN IN TO YOUR JOURNAL"}
             </div>
 
             {isRegistering && (
               <div className="relative">
-                <User className="absolute left-3 top-2.5 w-4 h-4 text-ink-gray" />
+                <User className="absolute left-3.5 top-3 w-4 h-4 text-gray-500" />
                 <input
                   type="text"
                   required
                   placeholder="Your Full Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-planner-base border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#3d1e03]/20 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-[#800f2f] transition-all font-semibold text-[#4a3f35] shadow-inner"
                 />
               </div>
             )}
 
             <div className="relative">
-              <Mail className="absolute left-3 top-2.5 w-4 h-4 text-ink-gray" />
+              <Mail className="absolute left-3.5 top-3 w-4 h-4 text-gray-500" />
               <input
                 type="email"
                 required
                 placeholder="Enter email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-planner-base border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#3d1e03]/20 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-[#800f2f] transition-all font-semibold text-[#4a3f35] shadow-inner"
               />
             </div>
 
             <div className="relative">
-              <Lock className="absolute left-3 top-2.5 w-4 h-4 text-ink-gray" />
+              <Lock className="absolute left-3.5 top-3 w-4 h-4 text-gray-500" />
               <input
                 type="password"
                 required
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-planner-base border border-[#3d1e03]/10 rounded-lg text-xs focus:outline-none"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#3d1e03]/20 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-[#800f2f] transition-all font-semibold text-[#4a3f35] shadow-inner"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-maroon hover:bg-maroon/90 text-white py-2.5 rounded-lg font-bold text-xs shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+              className="w-full bg-maroon hover:bg-maroon/90 text-white py-3 mt-2 rounded-md font-bold text-xs shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
             >
               <KeyRound className="w-4 h-4" />
               {loading ? "Please wait..." : isRegistering ? "Register New Account" : "Open Log Sheet"}
             </button>
 
-            <div className="text-center pt-2">
+            <div className="text-center pt-3">
               <button
                 type="button"
                 onClick={() => {
@@ -244,7 +248,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                   setMessage("");
                   setIsRegistering(!isRegistering);
                 }}
-                className="text-[10px] text-ink-gray hover:text-maroon font-bold underline cursor-pointer"
+                className="text-[10px] text-gray-600 hover:text-pink-600 font-extrabold cursor-pointer transition-colors"
               >
                 {isRegistering ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
               </button>
@@ -253,7 +257,7 @@ export default function Auth({ onSuccess }: AuthProps) {
         </div>
 
         {/* Cozy footer mark */}
-        <div className="z-20 text-[9px] text-planner-base/50 font-bold tracking-wider uppercase mb-1">
+        <div className="z-20 text-[9px] text-white/70 font-bold tracking-wider uppercase mb-1 drop-shadow-sm">
           Cozy Digital Binder
         </div>
       </div>
