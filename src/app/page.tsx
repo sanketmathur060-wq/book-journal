@@ -12,7 +12,8 @@ import BookDetail from "../components/BookDetail";
 import Authors from "../components/Authors";
 import Profile from "../components/Profile";
 import { GlitterEffect } from "../components/GlitterEffect";
-import { Book, UserSession, getBooks, getLocalSession, setLocalSession, saveBook, deleteBook, supabase, getUserProfile, saveUserProfile } from "../lib/db";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { Book, UserSession, getBooks, getLocalSession, setLocalSession, saveBook, deleteBook, auth, getUserProfile, saveUserProfile } from "../lib/db";
 
 type TabType = "dashboard" | "log" | "gallery" | "wishlist" | "authors" | "profile";
 
@@ -350,15 +351,15 @@ export default function Home() {
     }
     init();
 
-    // 2. Bind Supabase Auth change listeners
-    if (supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sbSession) => {
-        if (sbSession?.user) {
+    // 2. Bind Firebase Auth change listeners
+    if (auth) {
+      const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+        if (fbUser && fbUser.emailVerified) {
           const newSession: UserSession = {
-            email: sbSession.user.email || "",
-            name: sbSession.user.user_metadata?.name || "",
+            email: fbUser.email || "",
+            name: fbUser.displayName || "",
             isLocal: false,
-            userId: sbSession.user.id
+            userId: fbUser.uid
           };
           setSession(newSession);
           await setLocalSession(newSession);
@@ -368,19 +369,16 @@ export default function Home() {
           
           loadUserPreferences(newSession.email);
         } else {
-          // Null session on signed out events
-          if (event === "SIGNED_OUT") {
-            setSession(null);
-            await setLocalSession(null);
-            setBooks([]);
-            setActiveBookId(null);
-            loadUserPreferences(undefined);
-          }
+          setSession(null);
+          await setLocalSession(null);
+          setBooks([]);
+          setActiveBookId(null);
+          loadUserPreferences(undefined);
         }
       });
 
       return () => {
-        subscription.unsubscribe();
+        unsubscribe();
       };
     }
   }, [loadUserPreferences]);
@@ -395,8 +393,8 @@ export default function Home() {
 
   const handleLogout = async () => {
     if (confirm("Lock your digital reading planner?")) {
-      if (supabase && !session?.isLocal) {
-        await supabase.auth.signOut();
+      if (auth && !session?.isLocal) {
+        await signOut(auth);
       }
       await setLocalSession(null);
       setSession(null);
@@ -777,7 +775,7 @@ export default function Home() {
         {/* Footer label */}
         <footer className="bg-planner-paper px-6 py-3 border-t border-[#3d1e03]/10 flex items-center justify-between text-[10px] text-ink-gray font-semibold uppercase flex-shrink-0">
           <span>Copyright © {new Date().getFullYear()} Sanket Mathur. All Rights Reserved.</span>
-          <span>{session.isLocal ? "Local Offline Database Active" : "Supabase Cloud Sync Active"}</span>
+          <span>{session.isLocal ? "Local Offline Database Active" : "Firebase Cloud Sync Active"}</span>
         </footer>
 
       </div>

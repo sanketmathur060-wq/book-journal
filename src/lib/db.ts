@@ -1,4 +1,16 @@
-import { createClient } from "@supabase/supabase-js";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  query,
+  where
+} from "firebase/firestore";
 
 export interface Book {
   id: string;
@@ -19,7 +31,7 @@ export interface Book {
   scrapbookImages: string[]; // Base64 image strings in local mode
   genres: string[];
   isbn?: string;
-  // New spreadsheet log & wishlist columns
+  // Spreadsheet log & wishlist columns
   subGenre?: string;
   priority: 'Must read' | 'Interested' | 'Maybe';
   source: 'Gift' | 'Purchased' | 'Borrowed';
@@ -37,25 +49,37 @@ export interface UserSession {
   userId?: string;
 }
 
-// Check if Supabase keys exist in the environment
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-export const isSupabaseConfigured = SUPABASE_URL !== "" && SUPABASE_ANON_KEY !== "";
+// Check if Firebase keys exist in environment
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
+const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
+export const isFirebaseConfigured = FIREBASE_API_KEY !== "" && FIREBASE_PROJECT_ID !== "";
 
-export const supabase = isSupabaseConfigured
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+const app = isFirebaseConfigured
+  ? (!getApps().length ? initializeApp(firebaseConfig) : getApp())
   : null;
 
-// IndexedDB Helper functions
+export const auth = app ? getAuth(app) : null;
+export const firestore = app ? getFirestore(app) : null;
+
+// IndexedDB Helper functions for Local Offline Mode
 function getDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined') {
       reject(new Error("IndexedDB is only available in the browser"));
       return;
     }
-    const request = indexedDB.open("BookTokJournalDB", 2); // Bump version to 2 for users table
+    const request = indexedDB.open("BookTokJournalDB", 2);
     
-    request.onupgradeneeded = (e) => {
+    request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains("books")) {
         db.createObjectStore("books", { keyPath: "id" });
@@ -73,19 +97,16 @@ function getDB(): Promise<IDBDatabase> {
   });
 }
 
-// Local Database Auth Management
+// Session Management
 export async function getLocalSession(): Promise<UserSession | null> {
   try {
-    if (supabase) {
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        return {
-          email: data.session.user.email || "",
-          name: data.session.user.user_metadata?.name || "",
-          isLocal: false,
-          userId: data.session.user.id,
-        };
-      }
+    if (auth && auth.currentUser) {
+      return {
+        email: auth.currentUser.email || "",
+        name: auth.currentUser.displayName || "",
+        isLocal: false,
+        userId: auth.currentUser.uid,
+      };
     }
     
     const db = await getDB();
@@ -121,21 +142,21 @@ export async function setLocalSession(session: UserSession | null): Promise<void
 
 // Unified Database CRUD Functions (Scoped to Active User)
 export async function getBooks(): Promise<Book[]> {
-  // 1. Supabase Mode Scoping
-  if (supabase) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data, error } = await supabase
-        .from("books")
-        .select("*")
-        .eq("user_id", user.id);
-      
-      if (!error && data) {
-        return data as Book[];
-      }
-      if (error) {
-        console.error("Supabase load error, checking local fallback:", error);
-      }
+  // 1. Firebase Cloud Mode Scoping
+  if (auth && firestore && auth.currentUser) {
+    try {
+      const q = query(
+        collection(firestore, "books"),
+        where("user_id", "==", auth.currentUser.uid)
+      );
+      const querySnapshot = await getDocs(q);
+      const cloudBooks: Book[] = [];
+      querySnapshot.forEach((docSnap) => {
+        cloudBooks.push(docSnap.data() as Book);
+      });
+      return cloudBooks;
+    } catch (error) {
+      console.error("Firebase load error, checking local fallback:", error);
     }
   }
 
@@ -151,7 +172,6 @@ export async function getBooks(): Promise<Book[]> {
       const request = store.getAll();
       request.onsuccess = () => {
         const allBooks = request.result || [];
-        // Filter by userEmail to support local multi-user isolation
         const filtered = allBooks.filter((b: Book) => {
           return !b.userEmail || b.userEmail === activeEmail;
         });
@@ -169,19 +189,27 @@ export async function saveBook(book: Book): Promise<void> {
   const session = await getLocalSession();
   const activeEmail = session?.email || "local-user@booktok.app";
 
-  // 1. Supabase Mode Scoping
-  if (supabase) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { error } = await supabase
-        .from("books")
-        .upsert({
-          ...book,
-          user_id: user.id
-        });
-      
-      if (!error) return;
-      console.error("Supabase save error, saving locally:", error);
+  // Clean undefined properties for Firestore compliance
+  const cleanBook: Record<string, any> = {};
+  Object.keys(book).forEach((key) => {
+    const val = (book as any)[key];
+    if (val !== undefined) {
+      cleanBook[key] = val;
+    }
+  });
+
+  // 1. Firebase Cloud Mode Scoping
+  if (auth && firestore && auth.currentUser) {
+    try {
+      const bookRef = doc(firestore, "books", book.id);
+      await setDoc(bookRef, {
+        ...cleanBook,
+        user_id: auth.currentUser.uid,
+        userEmail: auth.currentUser.email || activeEmail
+      }, { merge: true });
+      return;
+    } catch (error) {
+      console.error("Firebase save error, saving locally:", error);
     }
   }
 
@@ -193,7 +221,7 @@ export async function saveBook(book: Book): Promise<void> {
       const store = tx.objectStore("books");
       const request = store.put({
         ...book,
-        userEmail: activeEmail // bind to logged in email
+        userEmail: activeEmail
       });
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
@@ -205,18 +233,14 @@ export async function saveBook(book: Book): Promise<void> {
 }
 
 export async function deleteBook(id: string): Promise<void> {
-  // 1. Supabase Mode Scoping
-  if (supabase) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { error } = await supabase
-        .from("books")
-        .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
-      
-      if (!error) return;
-      console.error("Supabase delete error, deleting locally:", error);
+  // 1. Firebase Cloud Mode Scoping
+  if (auth && firestore && auth.currentUser) {
+    try {
+      const bookRef = doc(firestore, "books", id);
+      await deleteDoc(bookRef);
+      return;
+    } catch (error) {
+      console.error("Firebase delete error, deleting locally:", error);
     }
   }
 
@@ -243,14 +267,12 @@ export async function localRegister(user: { name: string; email: string; passwor
     const tx = db.transaction("users", "readwrite");
     const store = tx.objectStore("users");
     
-    // Check if email already registered
     const checkReq = store.get(user.email);
     checkReq.onsuccess = () => {
       if (checkReq.result) {
         reject(new Error("Email already registered!"));
         return;
       }
-      // Put user
       const putReq = store.put(user);
       putReq.onsuccess = () => resolve();
       putReq.onerror = () => reject(putReq.error);
@@ -293,10 +315,9 @@ export function fileToBase64(file: File): Promise<string> {
 }
 
 // Global Image CDN Proxy helper using Cloudflare-backed weserv.nl
-// Compresses, resizes, and caches external cover images for instant loading
 export function getOptimizedCoverUrl(url: string, width = 200): string {
   if (!url) return "";
-  if (url.startsWith("data:")) return url; // Base64 uploaded files are served locally
+  if (url.startsWith("data:")) return url;
   const cleanUrl = url.replace(/^https?:\/\//i, "");
   return `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&w=${width}&fit=cover&output=webp`;
 }
@@ -313,32 +334,26 @@ export interface UserProfile {
 }
 
 export async function getUserProfile(email: string): Promise<UserProfile | null> {
-  // 1. Supabase Mode Scoping
-  if (supabase) {
+  // 1. Firebase Cloud Mode Scoping
+  if (auth && firestore && auth.currentUser) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
-        
-        if (!error && data) {
-          return {
-            name: data.name || "",
-            email: data.email || email,
-            bio: data.bio || "",
-            genres: data.genres || [],
-            avatarUrl: data.avatarUrl || undefined,
-            theme: data.theme || undefined,
-            layoutMode: data.layout_mode || undefined,
-            glitterEnabled: data.glitter_enabled !== undefined ? data.glitter_enabled : undefined
-          };
-        }
+      const profileRef = doc(firestore, "profiles", auth.currentUser.uid);
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        const data = profileSnap.data();
+        return {
+          name: data.name || auth.currentUser.displayName || "",
+          email: data.email || email,
+          bio: data.bio || "",
+          genres: data.genres || [],
+          avatarUrl: data.avatarUrl || undefined,
+          theme: data.theme || undefined,
+          layoutMode: data.layoutMode || undefined,
+          glitterEnabled: data.glitterEnabled !== undefined ? data.glitterEnabled : undefined
+        };
       }
     } catch (err) {
-      console.error("Supabase load profile error, checking local fallback:", err);
+      console.error("Firebase load profile error, checking local fallback:", err);
     }
   }
 
@@ -359,7 +374,6 @@ export async function getUserProfile(email: string): Promise<UserProfile | null>
 }
 
 export async function saveUserProfile(email: string, profile: UserProfile): Promise<void> {
-  // Fetch existing profile to merge settings and prevent overwriting
   const existing = await getUserProfile(email);
   const mergedProfile: UserProfile = {
     ...existing,
@@ -369,51 +383,24 @@ export async function saveUserProfile(email: string, profile: UserProfile): Prom
     glitterEnabled: profile.glitterEnabled !== undefined ? profile.glitterEnabled : existing?.glitterEnabled,
   };
 
-  // 1. Supabase Mode Scoping
-  if (supabase) {
+  // 1. Firebase Cloud Mode Scoping
+  if (auth && firestore && auth.currentUser) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const upsertData: any = {
-          id: user.id,
-          email: mergedProfile.email,
-          name: mergedProfile.name,
-          bio: mergedProfile.bio,
-          genres: mergedProfile.genres,
-          avatarUrl: mergedProfile.avatarUrl
-        };
-        
-        if (mergedProfile.theme !== undefined) upsertData.theme = mergedProfile.theme;
-        if (mergedProfile.layoutMode !== undefined) upsertData.layout_mode = mergedProfile.layoutMode;
-        if (mergedProfile.glitterEnabled !== undefined) upsertData.glitter_enabled = mergedProfile.glitterEnabled;
-
-        const { error } = await supabase
-          .from("profiles")
-          .upsert(upsertData);
-        
-        if (!error) return;
-        
-        // Postgres error 42703 is "column does not exist"
-        if (error.code === "42703") {
-          console.warn("Supabase profiles table lacks settings columns, retrying without them.");
-          const { error: retryErr } = await supabase
-            .from("profiles")
-            .upsert({
-              id: user.id,
-              email: mergedProfile.email,
-              name: mergedProfile.name,
-              bio: mergedProfile.bio,
-              genres: mergedProfile.genres,
-              avatarUrl: mergedProfile.avatarUrl
-            });
-          if (!retryErr) return;
-          console.error("Supabase profile save retry failed:", retryErr);
-        } else {
-          console.error("Supabase profile save failed:", error);
-        }
-      }
+      const profileRef = doc(firestore, "profiles", auth.currentUser.uid);
+      await setDoc(profileRef, {
+        id: auth.currentUser.uid,
+        email: mergedProfile.email,
+        name: mergedProfile.name,
+        bio: mergedProfile.bio,
+        genres: mergedProfile.genres,
+        avatarUrl: mergedProfile.avatarUrl || "",
+        theme: mergedProfile.theme || "",
+        layoutMode: mergedProfile.layoutMode || "single",
+        glitterEnabled: mergedProfile.glitterEnabled !== undefined ? mergedProfile.glitterEnabled : true
+      }, { merge: true });
+      return;
     } catch (err) {
-      console.error("Supabase save profile exception:", err);
+      console.error("Firebase profile save exception:", err);
     }
   }
 

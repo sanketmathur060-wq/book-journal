@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Lock, BookOpen, KeyRound, Mail, User, AlertCircle, ShieldAlert } from "lucide-react";
-import { UserSession, isSupabaseConfigured, supabase, localRegister, localLogin } from "../lib/db";
+import { Lock, BookOpen, KeyRound, Mail, User, AlertCircle } from "lucide-react";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendEmailVerification, signOut } from "firebase/auth";
+import { UserSession, isFirebaseConfigured, auth, localRegister, localLogin, saveUserProfile } from "../lib/db";
 
 interface AuthProps {
   onSuccess: (session: UserSession) => void;
@@ -23,8 +24,8 @@ export default function Auth({ onSuccess }: AuthProps) {
     setMessage("");
     setLoading(true);
 
-    if (isSupabaseConfigured && supabase) {
-      /* Cloud Supabase Authentication Mode */
+    if (isFirebaseConfigured && auth) {
+      /* Cloud Firebase Authentication Mode */
       try {
         if (isRegistering) {
           if (!email || !password || !name) {
@@ -32,18 +33,28 @@ export default function Auth({ onSuccess }: AuthProps) {
             setLoading(false);
             return;
           }
-          const { data, error: signupErr } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: { name },
-              emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          if (userCredential.user) {
+            await updateProfile(userCredential.user, { displayName: name });
+            
+            // Send verification email
+            await sendEmailVerification(userCredential.user);
+            
+            try {
+              await saveUserProfile(email, {
+                name: name,
+                email: email,
+                bio: "Cozy book lover 📚",
+                genres: []
+              });
+            } catch (pErr) {
+              console.error("Initial profile creation error:", pErr);
             }
-          });
-          if (signupErr) {
-            setError(signupErr.message);
-          } else {
-            setMessage("Account registered! Please check your email inbox to confirm, then sign in.");
+
+            // Immediately sign out unverified account
+            await signOut(auth);
+            
+            setMessage("Account created! A verification link has been sent to your email. Please verify your email before signing in.");
             setIsRegistering(false);
           }
         } else {
@@ -52,23 +63,32 @@ export default function Auth({ onSuccess }: AuthProps) {
             setLoading(false);
             return;
           }
-          const { data, error: loginErr } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          if (loginErr) {
-            setError(loginErr.message);
-          } else if (data.user) {
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          if (userCredential.user) {
+            if (!userCredential.user.emailVerified) {
+              await signOut(auth);
+              setError("Your email address is not verified yet! Please check your email inbox and click the verification link.");
+              setLoading(false);
+              return;
+            }
             onSuccess({
-              email: data.user.email || "",
-              name: data.user.user_metadata?.name || "",
+              email: userCredential.user.email || "",
+              name: userCredential.user.displayName || name || "",
               isLocal: false,
-              userId: data.user.id
+              userId: userCredential.user.uid
             });
           }
         }
       } catch (err: any) {
-        setError(err.message || "An authentication error occurred.");
+        let errorMsg = err.message || "An authentication error occurred.";
+        if (err.code === "auth/email-already-in-use") {
+          errorMsg = "Email is already registered! Please sign in.";
+        } else if (err.code === "auth/wrong-password" || err.code === "auth/user-not-found" || err.code === "auth/invalid-credential") {
+          errorMsg = "Invalid email or password. Please try again!";
+        } else if (err.code === "auth/weak-password") {
+          errorMsg = "Password should be at least 6 characters.";
+        }
+        setError(errorMsg);
       }
     } else {
       /* Local Multi-User Offline Mode (Scoped to IndexedDB registry) */
@@ -132,11 +152,11 @@ export default function Auth({ onSuccess }: AuthProps) {
 
         {/* 2. Connection status badge */}
         <div className="w-full z-20 mt-2.5 sm:mt-4">
-          {isSupabaseConfigured ? (
+          {isFirebaseConfigured ? (
             <div className="bg-emerald-50 border border-emerald-200/50 p-1.5 sm:p-2 rounded-lg text-center flex items-center justify-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
               <span className="text-[8px] sm:text-[10px] text-emerald-800 font-extrabold uppercase">
-                Production Cloud Database Connected
+                Production Firebase Cloud Connected
               </span>
             </div>
           ) : (
